@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Detection</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    #results {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white shadow-md rounded-lg p-6 max-w-lg w-full">
+    <h1 class="text-2xl font-bold text-center mb-6">Object Detection</h1>
+    <form id="uploadForm" class="mb-4">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="image">
+          Upload Image
+        </label>
+        <input class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" type="file" id="image" name="image" accept="image/*" required>
+      </div>
+      <button class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Detect Objects</button>
+    </form>
+    <div id="results">
+      <h2 class="text-xl font-bold mb-4">Detected Objects</h2>
+      <div class="mb-4">
+        <img id="annotatedImage" class="rounded shadow-md" src="" alt="Annotated Image">
+      </div>
+      <ul id="detectedObjects" class="list-disc pl-5"></ul>
+    </div>
+    <div class="translate-buttons hidden flex space-x-2 mt-2">
+      <p>Translate</p>
+      <button class="translate-button bg-green-500 text-white px-4 py-2 rounded" data-lang="ar">Arabic</button>
+      <button class="translate-button bg-yellow-500 text-white px-4 py-2 rounded" data-lang="zh">Chinese</button>
+      <button class="translate-button bg-purple-500 text-white px-4 py-2 rounded" data-lang="fr">French</button>
+      <button class="translate-button bg-red-500 text-white px-4 py-2 rounded" data-lang="ru">Russian</button>
+      <button class="translate-button bg-orange-500 text-white px-4 py-2 rounded" data-lang="es">Spanish</button>
+  </div>
+  <div id="translated-results" class="hidden mt-4">
+    <h3 class="text-lg font-semibold mb-2">Translated Object Names</h3>
+    <ul id="translated-list"></ul>
+  </div>
+  </div>
+
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const formData = new FormData();
+      const fileInput = document.getElementById('image');
+      formData.append('image', fileInput.files[0]);
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          document.getElementById('results').style.display = 'block';
+
+        //  display annotated result
+          document.getElementById('annotatedImage').src = `${data[0].annotated_image}`;
+
+          // Display detected objects
+          const detectedObjectsList = document.getElementById('detectedObjects');
+          detectedObjectsList.innerHTML = '';
+          data[0].detections.forEach(detection => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${detection.class}`;
+            detectedObjectsList.appendChild(listItem);
+          });
+
+          if(detectedObjects){
+            const translate_buttons = document.querySelector('.translate-buttons')
+            translate_buttons.classList.remove('hidden')
+          }
+
+      document.querySelectorAll('.translate-button').forEach(button => {
+      button.addEventListener('click', async function () {
+        const lang = this.getAttribute('data-lang');
+        const detections = [...document.getElementById('detectedObjects').children].map(li => li.textContent.split(' ')[0]);
+
+        try {
+          const response = await fetch('/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ detections, lang })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to translate text.');
+          }
+
+          const data = await response.json();
+          displayTranslatedResults(data.translations);
+        } catch (error) {
+          console.error(error);
+          alert('An error occurred. Please try again.');
+        }
+      });
+    });
+
+    function displayTranslatedResults (translations){
+      const translatedResultsDiv = document.getElementById('translated-results');
+      const translatedList = document.getElementById('translated-list');
+
+      translatedList.innerHTML = '';
+      translations.forEach(translation => {
+        const li = document.createElement('li');
+        li.textContent = translation;
+        translatedList.appendChild(li);
+      });
+
+      translatedResultsDiv.classList.remove('hidden');
+    }
+        } else {
+          alert('Object detection failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while processing the image. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
