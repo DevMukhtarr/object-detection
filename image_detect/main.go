@@ -86,17 +86,6 @@ func translateText(detections []string, lang string) ([]string, error) {
 		}
 	}
 	return translations, nil
-	// // target, err := language.Parse(targetLang)
-	// if err != nil {
-	// 	return "", fmt.Errorf("failed to parse target language: %v", err)
-	// }
-
-	// resp, err := translateClient.Translate(ctx, []string{text}, target, nil)
-	// if err != nil {
-	// 	return "", fmt.Errorf("failed to translate text: %v", err)
-	// }
-
-	// return resp[0].Text, nil
 }
 
 func detectObjects(imageData string) ([]PythonResponse, error) {
